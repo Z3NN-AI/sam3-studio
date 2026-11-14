@@ -75,6 +75,7 @@ class Session:
         self.base: str | None = None
         # imagen: anotaciones por id
         self.image_anns: dict[int, object] = {}
+        self.image_prompts: dict[int, dict] = {}  # clics/caja de cada objeto
         self.next_id = 0
 
     def summary(self) -> dict:
@@ -189,6 +190,22 @@ def image_segment(kind: str, data: dict) -> None:
             MODEL, img, points=[data["point"]], point_labels=[1], **kw
         )
         new = [(a, POINT) for a in anns[:1]]
+    elif kind == "refine":
+        # más clics sobre un objeto: se vuelve a segmentar con todos sus puntos
+        oid = data["id"]
+        ann = S.image_anns[oid]
+        pr = S.image_prompts.setdefault(oid, {"points": [], "labels": [], "box": None})
+        if not pr["points"] and pr["box"] is None and ann.bounding_box is not None:
+            bb = ann.bounding_box  # objetos de texto: partimos de su caja
+            pr["box"] = [bb.xmin, bb.ymin, bb.xmax, bb.ymax]
+        pr["points"].append(data["point"])
+        pr["labels"].append(int(data["label"]))
+        anns = client().segment(MODEL, img, points=pr["points"],
+                                point_labels=pr["labels"], box=pr["box"], **kw)
+        if anns:
+            S.image_anns[oid] = anns[0]
+        rebuild_image()
+        return
     else:
         raise ValueError(kind)
 
@@ -196,6 +213,10 @@ def image_segment(kind: str, data: dict) -> None:
         oid = S.next_id
         S.next_id += 1
         S.image_anns[oid] = ann
+        if kind == "point":
+            S.image_prompts[oid] = {"points": [data["point"]], "labels": [1], "box": None}
+        elif kind == "box" and not data.get("similar"):
+            S.image_prompts[oid] = {"points": [], "labels": [], "box": data["box"]}
         S.objects[oid] = {"id": oid, "label": label, "first": 0, "last": 0}
     rebuild_image()
 

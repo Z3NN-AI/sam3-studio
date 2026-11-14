@@ -202,8 +202,8 @@ const I18N = {
     threshold: 'Umbral', toolsTitle: 'Herramientas',
     toolClick: '👆 Clic', toolBox: '▭ Caja',
     similar: 'Caja: buscar todos los parecidos',
-    hintClick: 'Clic sobre algo sin máscara → lo añade. Clic sobre una máscara → la quita.',
-    hintClickVideo: ' En vídeo, añadir recorre todo el vídeo (tarda); quitar es instantáneo. Mayús+clic recorta zona de una máscara, Alt+clic la amplía.',
+    hintClick: 'Clic sobre algo sin máscara → lo añade. Clic sobre una máscara → la quita. Si coge solo una parte: Alt+clic en lo que falta lo añade, Mayús+clic en lo que sobra lo quita.',
+    hintClickVideo: ' En vídeo, añadir o corregir recorre todo el vídeo (tarda); quitar es instantáneo.',
     hintBox: 'Arrastra un rectángulo alrededor de un objeto.',
     hintBoxVideo: ' Se seguirá en todos los fotogramas.',
     countTitle: 'Recuento', countImage: 'objetos', countVideo: (n) => `en este fotograma · ${n} en total`,
@@ -222,7 +222,7 @@ const I18N = {
     x_matte: 'Máscara en blanco y negro', x_matte_d: 'Todos los objetos en blanco sobre negro. Para usar como máscara en Final Cut (ProRes .mov)',
     x_alpha: 'Máscaras en color con transparencia', x_alpha_d: 'Solo las máscaras, con fondo transparente, para ponerlas encima del vídeo (ProRes 4444 .mov)',
     x_perobject: 'Una máscara por objeto', x_perobject_d: 'Un archivo blanco y negro por cada objeto, para colorear cada uno por separado (ProRes .mov)',
-    x_note: 'Los objetos ocultos (◌) no se exportan. Para que encajen con tu vídeo original en Final Cut, ábrelo con sus FPS reales (Opciones de vídeo).',
+    x_note: 'Con una imagen se exporta todo en PNG (la máscara en blanco y negro, la de color con transparencia y una por objeto). Los objetos ocultos (◌) no se exportan. Para que encajen con tu vídeo original en Final Cut, ábrelo con sus FPS reales (Opciones de vídeo).',
     x_go: 'Exportar seleccionados', x_none: 'Marca al menos una opción',
     e_busy: 'Ya hay un proceso en marcha', e_nofile: 'Abre primero una imagen o un vídeo',
     e_oneclass: 'En vídeo osam sigue una sola clase cada vez (p. ej. solo «person»)',
@@ -242,8 +242,8 @@ const I18N = {
     threshold: 'Threshold', toolsTitle: 'Tools',
     toolClick: '👆 Click', toolBox: '▭ Box',
     similar: 'Box: find all similar objects',
-    hintClick: 'Click on something unmasked → adds it. Click on a mask → removes it.',
-    hintClickVideo: ' In video, adding runs through the whole video (slow); removing is instant. Shift+click trims a mask, Alt+click extends it.',
+    hintClick: 'Click on something unmasked → adds it. Click on a mask → removes it. If it only grabs part: Alt+click what is missing to add it, Shift+click what is extra to remove it.',
+    hintClickVideo: ' In video, adding or correcting runs through the whole video (slow); removing is instant.',
     hintBox: 'Drag a rectangle around an object.',
     hintBoxVideo: ' It will be tracked through every frame.',
     countTitle: 'Count', countImage: 'objects', countVideo: (n) => `in this frame · ${n} total`,
@@ -262,7 +262,7 @@ const I18N = {
     x_matte: 'Black & white matte', x_matte_d: 'All objects white on black. Use as a mask in Final Cut (ProRes .mov)',
     x_alpha: 'Colored masks with transparency', x_alpha_d: 'Masks only, on a transparent background, to lay over the video (ProRes 4444 .mov)',
     x_perobject: 'One matte per object', x_perobject_d: 'One black & white file per object, to color each separately (ProRes .mov)',
-    x_note: 'Hidden objects (◌) are not exported. To line up with your original video in Final Cut, open it at its real FPS (Video options).',
+    x_note: 'With an image everything is exported as PNG (B/W matte, color with transparency, one per object). Hidden objects (◌) are not exported. To line up with your original video in Final Cut, open it at its real FPS (Video options).',
     x_go: 'Export selected', x_none: 'Tick at least one option',
     e_busy: 'Another task is running', e_nofile: 'Open an image or a video first',
     e_oneclass: 'In video osam tracks one class at a time (e.g. just "person")',
@@ -599,7 +599,7 @@ canvas.addEventListener('click', async (e) => {
   if (!st || tool !== 'click') return;
   const [x, y] = toFrame(e);
   const id = await idAt(x, y);
-  if (st.kind === 'video' && (e.shiftKey || e.altKey)) {
+  if (e.shiftKey || e.altKey) {
     const target = id ?? nearest(x, y);
     if (target == null) return toast(t('e_nofix'));
     return send({ kind: 'refine', id: target, point: [x, y], label: e.altKey ? 1 : 0 });
