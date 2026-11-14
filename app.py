@@ -482,6 +482,14 @@ async def action(request: Request):
         return run_job("export", export_job, set(data.get("hidden", [])),
                        list(data.get("kinds", ["overlay"])))
 
+    if kind == "rename":
+        o = S.objects.get(data["id"])
+        name = str(data.get("name", "")).strip()[:40]
+        if o and name:
+            o["label"] = name
+            S.version += 1
+        return JSONResponse({"ok": True})
+
     if kind == "clear":
         if S.busy:
             return err("busy", "Another task is running", 409)

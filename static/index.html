@@ -207,8 +207,8 @@ const I18N = {
     hintBox: 'Arrastra un rectángulo alrededor de un objeto.',
     hintBoxVideo: ' Se seguirá en todos los fotogramas.',
     countTitle: 'Recuento', countImage: 'objetos', countVideo: (n) => `en este fotograma · ${n} en total`,
-    objectsTitle: 'Objetos', clearAll: 'Borrar todo', none: 'Todavía no hay objetos.',
-    goFirst: 'Ir al primer fotograma', toggle: 'Ocultar / mostrar', remove: 'Quitar',
+    objectsTitle: 'Objetos (doble clic en el nombre para renombrar)', clearAll: 'Borrar todo', none: 'Todavía no hay objetos.',
+    goFirst: 'Ir al primer fotograma', renameHint: 'Doble clic para cambiar el nombre', toggle: 'Ocultar / mostrar', remove: 'Quitar',
     keys: '<kbd>C</kbd> clic · <kbd>B</kbd> caja · <kbd>Espacio</kbd> reproducir · <kbd>←</kbd><kbd>→</kbd> fotograma · <kbd>H</kbd> ocultar máscaras',
     infoVideo: (s) => `${s.width}×${s.height} · ${s.n_frames} fotogramas a ${s.fps} fps`,
     loading: 'Cargando…', extracting: 'Extrayendo fotogramas…',
@@ -247,8 +247,8 @@ const I18N = {
     hintBox: 'Drag a rectangle around an object.',
     hintBoxVideo: ' It will be tracked through every frame.',
     countTitle: 'Count', countImage: 'objects', countVideo: (n) => `in this frame · ${n} total`,
-    objectsTitle: 'Objects', clearAll: 'Clear all', none: 'No objects yet.',
-    goFirst: 'Go to first frame', toggle: 'Hide / show', remove: 'Remove',
+    objectsTitle: 'Objects (double-click a name to rename)', clearAll: 'Clear all', none: 'No objects yet.',
+    goFirst: 'Go to first frame', renameHint: 'Double-click to rename', toggle: 'Hide / show', remove: 'Remove',
     keys: '<kbd>C</kbd> click · <kbd>B</kbd> box · <kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> frame · <kbd>H</kbd> hide masks',
     infoVideo: (s) => `${s.width}×${s.height} · ${s.n_frames} frames at ${s.fps} fps`,
     loading: 'Loading…', extracting: 'Extracting frames…',
@@ -449,7 +449,7 @@ function renderSide() {
   box.innerHTML = st.objects.map(o => `
     <div class="obj ${hidden.has(o.id) ? 'hidden' : ''}" data-id="${o.id}">
       <span class="sw" style="background:${color(o.id)}"></span>
-      <span class="name">#${o.id} ${esc(labelName(o.label))}
+      <span class="name" title="${t('renameHint')}">#${o.id} ${esc(labelName(o.label))}
         ${vid ? `<span class="muted"> · ${o.first + 1}–${o.last + 1}</span>` : ''}</span>
       ${vid ? `<button data-act="go" title="${t('goFirst')}">↦</button>` : ''}
       <button data-act="eye" title="${t('toggle')}">${hidden.has(o.id) ? '◌' : '◉'}</button>
@@ -465,6 +465,23 @@ $('#objects').addEventListener('click', (e) => {
   if (b.dataset.act === 'eye') { hidden.has(id) ? hidden.delete(id) : hidden.add(id); renderSide(); render(); }
   if (b.dataset.act === 'del') send({ kind: 'remove', id });
   if (b.dataset.act === 'go') seek(objById(id).first);
+});
+$('#objects').addEventListener('dblclick', (e) => {
+  const nm = e.target.closest('.name'), row = e.target.closest('.obj');
+  if (!nm || !row) return;
+  const id = +row.dataset.id, ob = objById(id);
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.value = labelName(ob.label); inp.style.width = '100%';
+  nm.replaceWith(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = async (ok) => {
+    if (done) return; done = true;
+    const v = inp.value.trim();
+    if (ok && v && v !== labelName(ob.label)) await send({ kind: 'rename', id, name: v });
+    else renderSide();
+  };
+  inp.onkeydown = (ev) => { ev.stopPropagation(); if (ev.key === 'Enter') finish(true); if (ev.key === 'Escape') finish(false); };
+  inp.onblur = () => finish(true);
 });
 $('#objects').addEventListener('mouseover', (e) => {
   const row = e.target.closest('.obj'); const id = row ? +row.dataset.id : null;
