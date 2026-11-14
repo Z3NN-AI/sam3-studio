@@ -1,0 +1,17 @@
+# Entorno de Python
+.venv/
+__pycache__/
+*.pyc
+
+# Datos de trabajo y resultados (pueden ser grandes o privados)
+work/
+videos exportados/
+test/
+server.log
+*.mp4
+*.mov
+sam3_dogs.png
+
+# macOS
+.DS_Store
+dogs.jpg
